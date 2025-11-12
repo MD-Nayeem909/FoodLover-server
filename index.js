@@ -85,6 +85,34 @@ app.post("/api/reviews", async (req, res) => {
   }
 })
 
+app.put("/api/reviews/:id", async (req, res) => {
+  try {
+    const id = new ObjectId(req.params.id);
+    const collection = await db.collection("reviews");
+    const review = await collection.findOne({ _id: id });
+    if (!review) {
+      return res.status(404).send({
+        data: {},
+        success: false,
+        message: "Reviews data not found",
+      });
+    }
+    const updatedReview = await collection.updateOne({ _id: id }, { $set: req.body });
+    res.status(200).send({
+      data: updatedReview,
+      success: true,
+      message: "Review updated successfully",
+    });
+  } catch (err) {
+    console.error("Review data update error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: "Review data update error",
+    });
+  }
+})
+
 
 
 

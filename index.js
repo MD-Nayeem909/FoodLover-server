@@ -113,7 +113,25 @@ app.put("/api/reviews/:id", async (req, res) => {
   }
 })
 
-
+app.delete("/api/reviews/:id", async (req, res) => {
+  try {
+    const id = new ObjectId(req.params.id);
+    const collection = await db.collection("reviews");
+    const review = await collection.deleteOne({ _id: id });
+    res.status(200).send({
+      data: review,
+      success: true,
+      message: "Review deleted successfully",
+    });
+  } catch (err) {
+    console.error("Review data delete error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: "Review data delete error",
+    });
+  }
+})
 
 
 

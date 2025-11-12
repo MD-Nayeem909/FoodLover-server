@@ -30,27 +30,36 @@ app.get("/api/reviews", async (req, res) => {
   }
 });
 
+app.get("/api/reviews/:id", async (req, res) => {
+  try {
+    const id = new ObjectId(req.params.id);
+    const collection = await db.collection("reviews");
+    const review = await collection.findOne({ _id: id });
+    if (!review) {
+      return res.status(404).send({
+        data: {},
+        success: false,
+        message: "Reviews data not found",
+      });
+    }
+    res.status(200).send({
+      data: review,
+      success: true,
+      message: "Review fetched successfully",
+    });
+  } catch (err) {
+    console.error("Review data fetch error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: "Review data fetch error",
+    });
+  }
+})
 
 
 
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
 
-app.get("/reviews", async (req, res) => {
-  //   const collection = await db.collection("reviews").find({}).toArray();
-
-  // demo data create on database
-  const collection = await db.collection("reviews").insertMany(
-    data.map((item) => ({
-      ...item,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }))
-  );
-
-  res.send(collection);
-});
 
 connectDB(async () => {
   app.listen(port, () => {

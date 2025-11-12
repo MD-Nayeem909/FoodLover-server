@@ -57,6 +57,34 @@ app.get("/api/reviews/:id", async (req, res) => {
   }
 })
 
+app.post("/api/reviews", async (req, res) => {
+  if (!req.body) {
+    return res.status(400).send({
+      data: {},
+      success: false,
+      message: "Review data not found",
+    });
+  }
+  const reviewData = {...req.body, createdAt: new Date(), updatedAt: new Date()};
+  try {
+    const collection = await db.collection("reviews");
+
+    const review = await collection.insertOne(reviewData);
+    res.status(201).send({
+      data: review,
+      success: true,
+      message: "Review created successfully",
+    });
+  } catch (err) {
+    console.error("Review data create error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: "Review data create error",
+    });
+  }
+})
+
 
 
 

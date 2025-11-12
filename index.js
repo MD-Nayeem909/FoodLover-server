@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { connectDB, db } from "./dbConnection.js";
 import { ObjectId } from "mongodb";
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,10 +17,10 @@ app.get("/api/reviews", async (req, res) => {
     const collection = await db.collection("reviews");
     const reviews = await collection.find({}).toArray();
     res.status(200).send({
-    data: reviews,
-    success: true,
-    message: "Reviews fetched successfully",
-  });
+      data: reviews,
+      success: true,
+      message: "Reviews fetched successfully",
+    });
   } catch (err) {
     console.error("Reviews data fetch error:", err);
     res.status(500).send({
@@ -55,7 +56,7 @@ app.get("/api/reviews/:id", async (req, res) => {
       message: "Review data fetch error",
     });
   }
-})
+});
 
 app.post("/api/reviews", async (req, res) => {
   if (!req.body) {
@@ -65,7 +66,11 @@ app.post("/api/reviews", async (req, res) => {
       message: "Review data not found",
     });
   }
-  const reviewData = {...req.body, createdAt: new Date(), updatedAt: new Date()};
+  const reviewData = {
+    ...req.body,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
   try {
     const collection = await db.collection("reviews");
 
@@ -83,7 +88,7 @@ app.post("/api/reviews", async (req, res) => {
       message: "Review data create error",
     });
   }
-})
+});
 
 app.put("/api/reviews/:id", async (req, res) => {
   try {
@@ -97,7 +102,10 @@ app.put("/api/reviews/:id", async (req, res) => {
         message: "Reviews data not found",
       });
     }
-    const updatedReview = await collection.updateOne({ _id: id }, { $set: req.body });
+    const updatedReview = await collection.updateOne(
+      { _id: id },
+      { $set: req.body }
+    );
     res.status(200).send({
       data: updatedReview,
       success: true,
@@ -111,7 +119,7 @@ app.put("/api/reviews/:id", async (req, res) => {
       message: "Review data update error",
     });
   }
-})
+});
 
 app.delete("/api/reviews/:id", async (req, res) => {
   try {
@@ -131,9 +139,53 @@ app.delete("/api/reviews/:id", async (req, res) => {
       message: "Review data delete error",
     });
   }
-})
+});
 
 
+
+function passwordHash(password) {
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(password, salt);
+  return hash;
+}
+function passwordVerify(password, hash) {
+  return bcrypt.compareSync(password, hash);
+}
+
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const user = {
+      ...req.body,
+      password: passwordHash(req.body.password),
+      
+      favorites: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const collection = await db.collection("users");
+    const newUser = await collection.insertOne(user);
+    res.status(201).send({
+      data: newUser,
+      success: true,
+      message: "User created successfully",
+    });
+  } catch (err) {
+    console.error("User data create error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: {error:"User data create error", errorMessage: err.message},
+    });
+  }
+});
+
+app.get("/auth/login", (req, res) => {
+  res.status(200).send({
+    data: {},
+    success: true,
+    message: "Login successful",
+  });
+});
 
 connectDB(async () => {
   app.listen(port, () => {

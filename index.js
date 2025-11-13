@@ -59,6 +59,8 @@ app.get("/api/reviews/:id", async (req, res) => {
 });
 
 app.post("/api/reviews", async (req, res) => {
+  console.log(req.body);
+  
   if (!req.body) {
     return res.status(400).send({
       data: {},
@@ -68,6 +70,7 @@ app.post("/api/reviews", async (req, res) => {
   }
   const reviewData = {
     ...req.body,
+    tags: req.body.tags.split(","),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -141,7 +144,22 @@ app.delete("/api/reviews/:id", async (req, res) => {
   }
 });
 
+const verifyFireBaseToken = async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  const token = authorization.split(" ")[1];
 
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    console.log("inside token", decoded);
+    req.token_email = decoded.email;
+    next();
+  } catch (error) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+};
 
 function passwordHash(password) {
   const salt = bcrypt.genSaltSync(10);
@@ -152,12 +170,20 @@ function passwordVerify(password, hash) {
   return bcrypt.compareSync(password, hash);
 }
 
+// register
 app.post("/auth/signup", async (req, res) => {
+  if (!req.body || !req.body.email || !req.body.password) {
+    return res.status(400).send({
+      data: {},
+      success: false,
+      message: "User data not found",
+    });
+  }
   try {
     const user = {
       ...req.body,
       password: passwordHash(req.body.password),
-      
+
       favorites: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -174,17 +200,52 @@ app.post("/auth/signup", async (req, res) => {
     res.status(500).send({
       data: {},
       success: false,
-      message: {error:"User data create error", errorMessage: err.message},
+      message: { error: "User data create error", errorMessage: err.message },
     });
   }
 });
 
-app.get("/auth/login", (req, res) => {
-  res.status(200).send({
-    data: {},
-    success: true,
-    message: "Login successful",
-  });
+// login
+app.post("/auth/login", (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).send({
+      data: {},
+      success: false,
+      message: "Email and password are required",
+    });
+  }
+  try {
+    const collection = db.collection("users");
+    const user = collection.findOne({ email });
+    if (!user) {
+      return res.status(401).send({
+        data: {},
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (!passwordVerify(password, user.password)) {
+      return res.status(401).send({
+        data: {},
+        success: false,
+        message: "Invalid password",
+      });
+    }
+    const token = jwt.sign({ email }, "secret", { expiresIn: "1h" });
+    res.status(200).send({
+      token,
+      success: true,
+      message: "User logged in successfully",
+    });
+  } catch (err) {
+    console.error("User data fetch error:", err);
+    res.status(500).send({
+      data: {},
+      success: false,
+      message: "User data fetch error",
+    });
+  }
 });
 
 connectDB(async () => {

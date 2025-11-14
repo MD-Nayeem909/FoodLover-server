@@ -1,4 +1,4 @@
-import { db } from '../../dbConnection';
+import { db } from '../../dbConnection.js';
 import jwt from 'jsonwebtoken';
 async function authUser(req, res, next) {
 	try {

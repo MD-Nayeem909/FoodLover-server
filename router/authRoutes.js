@@ -1,6 +1,5 @@
 import express from 'express';
 import { passwordHash, passwordVerify } from '../utility/passVerify.js';
-import {authUser, verifyToken} from '../middleware/auth/auth.js';
 import jwt from 'jsonwebtoken';
 import { db } from '../dbConnection.js';
 const authRouter = express.Router();
@@ -53,8 +52,6 @@ authRouter.post('/login', async (req, res) => {
 	try {
 		const collection = db.collection('users');
 		const user = await collection.findOne({ email });
-		console.log("🚀 ~ authRoutes.js:55 ~ user:", user)
-
 
 		if (!user) {
 			return res.status(401).send({
@@ -74,13 +71,6 @@ authRouter.post('/login', async (req, res) => {
 		const token = jwt.sign({ email }, 'secret', { expiresIn: '1h' });
 		res.status(200).send({
 			token,
-			user: {
-				_id: user._id,
-				email: user.email,
-				favorites: user.favorites,
-				photoUrl: user.photoURL,
-				username: user.username,
-			},
 			success: true,
 			message: 'User logged in successfully',
 		});

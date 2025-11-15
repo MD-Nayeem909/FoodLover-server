@@ -27,12 +27,11 @@ userRouter.get('/favorites', verifyToken, authUser, async (req, res) => {
 });
 
 userRouter.get('/me', verifyToken, authUser, async (req, res) => {
-    req.send({
-        data: req.user,
-        success: true,
-        message: 'User data fetched successfully',
-    })
+	res.send({
+		user: req.user,
+		success: true,
+		message: 'User data fetched successfully',
+	});
 });
-
 
 export default userRouter;
